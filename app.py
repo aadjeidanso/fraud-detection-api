@@ -43,6 +43,9 @@ def predict():
         prediction = model.predict(df)[0]  # 0 = Legit, 1 = Fraud
         probability = model.predict_proba(df)[0][1]  # Probability of fraud
 
+        # Log API response for debugging
+        print(f"API Response: Fraud Prediction={int(prediction)}, Fraud Probability={round(probability, 4)}")
+
         # Return response with fraud probability
         return jsonify({
             "fraud_prediction": int(prediction),
@@ -50,6 +53,7 @@ def predict():
         })
 
     except Exception as e:
+        print("Error:", str(e))
         return jsonify({"error": str(e)})
 
 # Run the API
