@@ -1,24 +1,31 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import CORS for frontend-backend communication
 import joblib
 import pandas as pd
 
-# Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Enable CORS to allow React requests
 
-# Load the trained model
+# Load trained model
 model = joblib.load("fraud_detection_model.pkl")
+
+# Mapping for categorical features
+category_mappings = {
+    "Low": -5,
+    "Medium-Low": -2.5,
+    "Medium": 0,
+    "Medium-High": 2.5,
+    "High": 5
+}
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Get JSON data from request
+        # Get JSON data
         data = request.get_json()
-        print("Received data:", data)  # Debugging
 
-        if not data:
-            return jsonify({"error": "No data received"}), 400
+        # Convert categorical values to numbers
+        for key in data:
+            if data[key] in category_mappings:
+                data[key] = category_mappings[data[key]]
 
         # Convert data to DataFrame
         df = pd.DataFrame([data])
@@ -31,18 +38,13 @@ def predict():
         prediction = model.predict(df)[0]
         probability = model.predict_proba(df)[0][1]  # Probability of fraud
 
-        print(f"Prediction: {prediction}, Probability: {probability}")  # Debugging
-
-        # Return response
         return jsonify({
             "fraud_prediction": int(prediction),
             "fraud_probability": round(probability, 4)
         })
     
     except Exception as e:
-        print("Error:", str(e))  # Debugging
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)})
 
-# Run the API
 if __name__ == '__main__':
     app.run(debug=True)
